@@ -1,0 +1,51 @@
+name: Test, Lint
+on: push
+jobs:
+  test:
+    env:
+      py37: 3.7
+      py38: 3.8
+      py39: 3.9
+      py310: "3.10"
+      py311: "3.11"
+      pypy3: pypy-3.7
+    strategy:
+      matrix:
+        python-version: [py37, py38, py39, py310, py311, pypy3]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env[matrix.python-version] }}
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: cache-${{ env[matrix.python-version] }}-${{ hashFiles('dev-requirements.txt') }}
+    - name: Install packages
+      run: |
+        pip install -r dev-requirements.txt
+        make local_install
+    - run: make test
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: cache-3.11-${{ hashFiles('dev-requirements.txt') }}
+    - name: Install packages
+      run: |
+        pip install -r dev-requirements.txt
+        make local_install
+    - run: make lint
+    - name: check formatting
+      run: |
+        make black
+        git diff --exit-code
