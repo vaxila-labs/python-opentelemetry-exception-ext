@@ -54,26 +54,43 @@ class ExceptionRecorderDecorator:
             self.__recordable = lambda exception, key, val: True
 
     def decorate_method(self, method: Callable) -> Callable:
-        def decorate(*original_args, **kwargs):
+        def decorate(*original_args, **original_kwargs):
             args = list(original_args)
+            kwargs = original_kwargs.copy()
             try:
-                if len(args) > 1:
-                    exception: Exception = args[1]
-                    attributes: types.Attributes = {}
-                    if len(args) > 2:
-                        attributes = args[2]
-                    else:
-                        args.append(None)
+                exception = self.__get_exception_from_args(*args, **kwargs)
+                if exception is not None:
+                    attributes = self.__extract_attributes(args, kwargs)
                     local_vars = self.__create_local_variable_attributes(exception)
-                    local_vars.update(attributes)
-                    args[2] = local_vars
+                    attributes.update(local_vars)
             # pylint: disable=broad-exception-caught
             except Exception:
                 args = original_args
+                kwargs = original_kwargs
 
             return method(*args, **kwargs)
 
         return decorate
+
+    def __extract_attributes(self, args: list, kwargs: dict) -> types.Attributes:
+        if len(args) > 2:
+            attributes = args[2]
+            if attributes is None:
+                attributes = {}
+                args[2] = attributes
+            return attributes
+        attrs = kwargs.get("attributes")
+        if attrs:
+            return attrs
+
+        attributes = {}
+        kwargs["attributes"] = attributes
+        return attributes
+
+    def __get_exception_from_args(self, *args, **kwargs) -> Union[Exception, None]:
+        if len(args) > 1:
+            return args[1]
+        return kwargs.get("exception")
 
     def __create_local_variable_attributes(self, exception: Exception) -> dict:
         traceback = self.__last_matched_traceback(exception)

@@ -1,6 +1,6 @@
 from datetime import datetime
 import pytest
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import TracerProvider, Span
 from opentelemetry.exception.ext import (
     enable_local_variables_recording,
     disable_local_variables_recording,
@@ -48,6 +48,49 @@ def test_enable_local_variables_recording_with_recordable(fixture_function):
     assert "local.var.test_arg" in events[0].attributes.keys()
     assert "local.var.test_value" not in events[0].attributes.keys()
     assert "hello exception" == events[0].attributes["local.var.test_arg"]
+
+
+# fmt: off
+params = {
+    "call with arguments": (
+        lambda span, exc, attr: span.record_exception(exc, attr), True
+    ),
+    "call with attributes as keyword": (
+        lambda span, exc, attr: span.record_exception(exc, attributes=attr), True
+    ),
+    "call with keyword arguments": (
+        lambda span, exc, attr: span.record_exception(exception=exc, attributes=attr), True
+    ),
+    "call without attributes": (
+        lambda span, exc, attr: span.record_exception(exc), False
+    ),
+    "call with keyword but no attributes": (
+        lambda span, exc, attr: span.record_exception(exception=exc), False
+    ),
+    "call with None attributes": (
+        lambda span, exc, attr: span.record_exception(exc, None, 123), False
+    ),
+}
+# fmt: on
+
+
+@pytest.mark.parametrize("record_fn,use_attributes", params.values(), ids=list(params.keys()))
+def test_enable_local_variables_recording_with_different_arguments(
+    fixture_function, record_fn, use_attributes
+):
+    span = create_span()
+    exception = create_exception()
+    attributes = {"dummy_attribute": "foo"}
+    record_fn(span, exception, attributes)
+
+    events = span.events
+    assert len(events) == 1
+    assert "exception" in events[0].name
+
+    attributes_keys = events[0].attributes.keys()
+    assert "local.var.test_arg" in attributes_keys
+    if use_attributes:
+        assert "dummy_attribute" in attributes_keys
 
 
 def test_enable_local_variables_recording_with_multiple_times_no_multiple_decoration(
@@ -106,6 +149,19 @@ def create_exception_raised_span(test_arg):
         pass
 
     return s
+
+
+def create_span() -> Span:
+    tracer_provider = TracerProvider()
+    tracer = tracer_provider.get_tracer("my.tracer.name")
+    return tracer.start_span("hello")
+
+
+def create_exception():
+    try:
+        raise_exception("hello")
+    except Exception as exception:
+        return exception
 
 
 def raise_exception(test_arg):
