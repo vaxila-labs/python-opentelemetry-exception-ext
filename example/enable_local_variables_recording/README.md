@@ -27,7 +27,10 @@ Above command will output OpenTelemetry's span which holds values of variables u
                 "exception.escaped": "False",
                 "local.var.text_arg": "hello",  // <= Added value for `text_arg`
                 "local.var.int_arg": 1234,  // <= Added value for `int_arg`
-                "local.var.bool_var": true  // <= Added value for `bool_var`
+                "local.var.bool_var": true,  // <= Added value for `bool_var`
+                "local.function.filename": "/path/to/enable_local_variables_recording/sample.py",  // <= Added value for filename
+                "local.function.name": "raise_exception",  // <= Added value for function name
+                "local.function.lineno": 16  // <= Added value for line number of the file
             }
         }
     ]

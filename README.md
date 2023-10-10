@@ -20,7 +20,7 @@ enable_local_variables_recording()
 ```
 
 When exception is raised, OpenTelemetry automatically creates an event for exception.  
-`enable_local_variables_recording()` adds local variables to the event's attributes automatically by decorating `Span.record_exception()`.  
+`enable_local_variables_recording()` adds local variables and its function information to the event's attributes automatically by decorating `Span.record_exception()`.  
 This helps you find the situation where exception happened.
 
 Attributes will be added like below.
@@ -43,7 +43,10 @@ Attributes will be added like below.
                 "exception.escaped": "False",
                 "local.var.text_arg": "hello",  // <= Added value for `text_arg`
                 "local.var.int_arg": 1234,  // <= Added value for `int_arg`
-                "local.var.bool_var": true  // <= Added value for `bool_var`
+                "local.var.bool_var": true,  // <= Added value for `bool_var`
+                "local.function.filename": "/path/to/enable_local_variables_recording/sample.py",  // <= Added value for filename
+                "local.function.name": "raise_exception",  // <= Added value for function name
+                "local.function.lineno": 16  // <= Added value for line number of the file
             }
         }
     ]

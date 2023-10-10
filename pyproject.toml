@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opentelemetry-exception-ext"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Vaxila Labs", email="hello@vaxila-labs.com" },
 ]
@@ -26,3 +26,7 @@ classifiers = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/opentelemetry"]
+
+[tool.black]
+# same length with pylint
+line-length = 100

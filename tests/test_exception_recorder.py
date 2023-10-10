@@ -21,9 +21,15 @@ def test_enable_local_variables_recording(fixture_function):
     events = span.events
     assert len(events) == 1
     assert "exception" in events[0].name
-    assert "local.var.test_arg" in events[0].attributes.keys()
-    assert "local.var.test_value" in events[0].attributes.keys()
+
+    attributes_keys = events[0].attributes.keys()
+    assert "local.var.test_arg" in attributes_keys
+    assert "local.var.test_value" in attributes_keys
     assert "hello exception" == events[0].attributes["local.var.test_arg"]
+
+    assert "local.function.filename" in attributes_keys
+    assert "local.function.name" in attributes_keys
+    assert "local.function.lineno" in attributes_keys
 
 
 def test_enable_local_variables_recording_with_recordable(fixture_function):
@@ -78,9 +84,7 @@ params = {
 
 
 @pytest.mark.parametrize("test_arg,expected", params.values(), ids=list(params.keys()))
-def test_enable_local_variables_recording_with_params(
-    fixture_function, test_arg, expected
-):
+def test_enable_local_variables_recording_with_params(fixture_function, test_arg, expected):
     span = create_exception_raised_span(test_arg)
     events = span.events
     assert len(events) == 1

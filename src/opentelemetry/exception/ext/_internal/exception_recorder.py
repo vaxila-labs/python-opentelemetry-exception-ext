@@ -6,6 +6,7 @@ from opentelemetry.sdk.trace import Span
 from opentelemetry.util import types
 
 LOCAL_VARIABLE_ATTRIBUTE_KEY_PREFIX = "local.var."
+LOCAL_VARIABLE_FUNCTION_ATTRIBUTE_KEY_PREFIX = "local.function."
 VALID_ATTR_VALUE_TYPES = (bool, str, bytes, int, float)
 
 Recordable = Callable[[Exception, str, any], bool]
@@ -24,9 +25,7 @@ class ExceptionRecorder:
         with cls.__lock:
             cls.__original_record_exception_func = Span.record_exception
 
-            decorator = ExceptionRecorderDecorator(
-                project_path=project_path, recordable=recordable
-            )
+            decorator = ExceptionRecorderDecorator(project_path=project_path, recordable=recordable)
             Span.record_exception = decorator.decorate_method(Span.record_exception)
 
     @classmethod
@@ -82,19 +81,19 @@ class ExceptionRecorderDecorator:
             return {}
 
         attributes = {}
-        for name, value in traceback.tb_frame.f_locals.items():
+        frame = traceback.tb_frame
+        for name, value in frame.f_locals.items():
             if not self.__recordable(exception, name, value):
                 continue
             if isinstance(value, VALID_ATTR_VALUE_TYPES):
                 attributes[LOCAL_VARIABLE_ATTRIBUTE_KEY_PREFIX + name] = value
             else:
                 attributes[LOCAL_VARIABLE_ATTRIBUTE_KEY_PREFIX + name] = str(value)
+        attributes.update(self.__create_frame_info_attributes(frame))
 
         return attributes
 
-    def __last_matched_traceback(
-        self, exception: Exception
-    ) -> Union[pytypes.TracebackType, None]:
+    def __last_matched_traceback(self, exception: Exception) -> Union[pytypes.TracebackType, None]:
         traceback = exception.__traceback__
         last_matched = None
 
@@ -105,6 +104,13 @@ class ExceptionRecorderDecorator:
             traceback = traceback.tb_next
 
         return last_matched
+
+    def __create_frame_info_attributes(self, frame: pytypes.FrameType):
+        return {
+            LOCAL_VARIABLE_FUNCTION_ATTRIBUTE_KEY_PREFIX + "filename": frame.f_code.co_filename,
+            LOCAL_VARIABLE_FUNCTION_ATTRIBUTE_KEY_PREFIX + "name": frame.f_code.co_name,
+            LOCAL_VARIABLE_FUNCTION_ATTRIBUTE_KEY_PREFIX + "lineno": frame.f_lineno,
+        }
 
 
 def enable_local_variables_recording(
