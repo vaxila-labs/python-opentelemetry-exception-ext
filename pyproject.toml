@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opentelemetry-exception-ext"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Vaxila Labs", email="hello@vaxila-labs.com" },
 ]
@@ -23,6 +23,13 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/vaxila-labs/python-opentelemetry-exception-ext"
 "Bug Tracker" = "https://github.com/vaxila-labs/python-opentelemetry-exception-ext/issues"
+
+[tool.hatch.build]
+include = [
+    "src/**/*.py",
+    "README.md",
+    "LICENSE",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/opentelemetry"]
